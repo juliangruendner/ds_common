@@ -220,10 +220,8 @@ class HTTPRequest(HTTPMessage):
 
         if reqline == '': 
             return None
-        print "reached before reqLine split"
-        print "reqline = " , str(reqline)
+
         method, url, proto = reqline.split()
-        print "reached after reqLine split"
 
         # Read headers & body
         headers = HTTPMessage._readheaders(data)
