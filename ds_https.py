@@ -20,7 +20,7 @@
   
 """
 
-from http import *
+from ds_http import *
 import select
 
 class HTTPSRequest(HTTPMessage):

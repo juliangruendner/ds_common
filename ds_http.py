@@ -22,7 +22,7 @@
 
 import datetime
 import copy
-import urlparse
+import urllib.parse
 import select
 import base64
 
@@ -57,18 +57,27 @@ class HTTPMessage():
     @staticmethod
     def _readheaders(data):
         headers = {}
+        
+        for line in data:
+            line = line.decode("utf-8")
 
-	for line in data:
-	    if line == HTTPMessage.EOL:
-		break
-	    assert ":" in line
+            if line == HTTPMessage.EOL:
+                break
+            
+            assert ":" in line
             line = line.rstrip(HTTPMessage.EOL)
             i = line.index(":")
             n = line[:i]
             v = line[i+1:]
-	    if n not in headers:
-		headers[n] = []
-	    headers[n].append(v.lstrip())
+            v = v.lstrip()
+            v = v.strip("[']")
+            print(v)
+            
+            if n not in headers:
+                headers[n] = []
+                headers[n].append(v)
+
+        print(headers)
 
         return headers
 
@@ -76,7 +85,7 @@ class HTTPMessage():
     def _readbody(data, headers):
         bodylen = None
         chunked = False
-        for n,v in headers.iteritems():
+        for n,v in headers.items():
             if n.lower() == "content-length":
                 assert bodylen is None, "[!] Duplicated content length"
                 bodylen = int(v[0])
@@ -88,6 +97,7 @@ class HTTPMessage():
         body = ""
         if bodylen is not None:
             body = data.read(bodylen)
+            body = body.decode('utf-8')
         elif chunked:
             # Chunked encoding
             while True:
@@ -111,7 +121,7 @@ class HTTPMessage():
 
     def isChunked(self):
         r = False
-        for n, v in self.headers.iteritems():
+        for n, v in self.headers.items():
             if n.lower() == "transfer-encoding" and v[0].lower() == "chunked":
                 r = True
                 break
@@ -163,7 +173,7 @@ class HTTPMessage():
         then the case of the header name is ignored.
         """
         r = []
-        for n,v in self.headers.iteritems():
+        for n,v in self.headers.items():
             if (ignorecase and name.lower() == n.lower()) or ((not ignorecase) and name == n):
                 r.extend(v)
         return r
@@ -175,8 +185,8 @@ class HTTPMessage():
         """
         k = self.__findHeader(name, ignorecase)
         if k not in self.headers:
-            self.headers[name] = []
-        self.headers[name].append(value)
+            self.headers[name] = value
+        #self.headers[name].append(value)
 
     def setHeader(self, name, value, ignorecase = True):
         """
@@ -216,11 +226,13 @@ class HTTPRequest(HTTPMessage):
     @staticmethod
     def build(data):
         # Read request line
-        reqline = data.readline().rstrip(HTTPMessage.EOL)
+        # TODO - check if decoding good idea or wheather conversion without decoding is possible
+        reqline = data.readline().decode("utf-8").rstrip(HTTPMessage.EOL)
 
         if reqline == '': 
             return None
 
+        print(reqline)
         method, url, proto = reqline.split()
 
         # Read headers & body
@@ -238,7 +250,7 @@ class HTTPRequest(HTTPMessage):
             else:
                 port = 80
         else:
-            r = urlparse.urlparse(self.url)
+            r = urllib.parse.urlparse(self.url)
             port = r.port
             if port is None:
                 if r.scheme != "https":
@@ -252,7 +264,7 @@ class HTTPRequest(HTTPMessage):
         return host, port
 
     def getPath(self):
-        r = urlparse.urlparse(self.url)
+        r = urllib.parse.urlparse(self.url)
         s = r.path
         if len(r.params) > 0:
             s += ";%s" % r.params
@@ -263,16 +275,16 @@ class HTTPRequest(HTTPMessage):
         return s
 
     def getQueryParams(self):
-        queryString = urlparse.urlparse(self.url).query
-        return urlparse.parse_qs(queryString)
+        queryString = urllib.parse.urlparse(self.url).query
+        return urllib.parse.parse_qs(queryString)
 
 
     def __str__(self):
         s = "{REQ #%d} method: %s ; host: %s ; path: %s ; proto: %s ; len(body): %d\n" % \
             (self.uid, self.method, self.getHost(), self.getPath(), self.proto, len(self.body))
-        for n,v in self.headers.iteritems():
-	    for i in v:
-		s += "  %s: %s\n" % (n, i)
+        for n,v in self.headers.items():
+            s += "  %s: %s\n" % (n, v)
+
         return s
 
     def isRequest(self):
@@ -295,6 +307,12 @@ class HTTPRequest(HTTPMessage):
 
     def getBody(self):
         return self.body
+    
+    def getRequestLine(self):
+        s = "%s %s %s" % (self.method, self.url, self.proto)
+        s += HTTPMessage.EOL
+
+        return s
 
     def serialize(self):
         # Request line
@@ -302,10 +320,9 @@ class HTTPRequest(HTTPMessage):
         s += HTTPMessage.EOL
 
         # Headers
-        for n,v in self.headers.iteritems():
-	    for i in v:
-		s += "%s: %s" % (n, i)
-		s += HTTPMessage.EOL
+        for n,v in self.headers.items():
+            s += "%s: %s" % (n, v)
+            s += HTTPMessage.EOL
 		
         s += HTTPMessage.EOL
 
@@ -348,12 +365,14 @@ class HTTPResponse(HTTPMessage):
         s += HTTPMessage.EOL
 
         # Headers
-        for n,v in self.headers.iteritems():
-	    for i in v:
-		s += "%s: %s" % (n, i)
-		s += HTTPMessage.EOL
+
+        for n,v in self.headers.items():
+            #for i in v:
+            s += "%s: %s" % (n, v)
+            s += HTTPMessage.EOL
 
         s += HTTPMessage.EOL
+
 
         # Body
         if not self.isChunked():
@@ -365,14 +384,18 @@ class HTTPResponse(HTTPMessage):
             s += HTTPMessage.EOL
             s += "0" + HTTPMessage.EOL + HTTPMessage.EOL
 
+
+        print("***begin serial ****")
+        print(s)
+        print("***end serial ****")
         return s
 
     def __str__(self):
         s = "{RES #%d} code: %d (%s) ; proto: %s ; len(body): %d\n" % \
             (self.uid, self.code, self.msg, self.proto, len(self.body))
-        for n,v in self.headers.iteritems():
-	    for i in v:
-		s += "  %s: %s\n" % (n, i)
+        for n,v in self.headers.items():
+            s += "  %s: %s\n" % (n, v)
+        
         return s
 
     def isResponse(self):
