@@ -59,7 +59,7 @@ class HTTPMessage():
         headers = {}
         
         for line in data:
-            line = line.decode("utf-8")
+            line = line.decode("latin-1")
 
             if line == HTTPMessage.EOL:
                 break
@@ -97,7 +97,7 @@ class HTTPMessage():
         body = ""
         if bodylen is not None:
             body = data.read(bodylen)
-            body = body.decode('utf-8')
+            body = body.decode('latin-1')
         elif chunked:
             # Chunked encoding
             while True:
@@ -227,7 +227,7 @@ class HTTPRequest(HTTPMessage):
     def build(data):
         # Read request line
         # TODO - check if decoding good idea or wheather conversion without decoding is possible
-        reqline = data.readline().decode("utf-8").rstrip(HTTPMessage.EOL)
+        reqline = data.readline().decode("latin-1").rstrip(HTTPMessage.EOL)
 
         if reqline == '': 
             return None
