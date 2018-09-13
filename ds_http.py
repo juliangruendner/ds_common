@@ -71,13 +71,10 @@ class HTTPMessage():
             v = line[i+1:]
             v = v.lstrip()
             v = v.strip("[']")
-            print(v)
             
             if n not in headers:
                 headers[n] = []
                 headers[n].append(v)
-
-        print(headers)
 
         return headers
 
@@ -232,7 +229,6 @@ class HTTPRequest(HTTPMessage):
         if reqline == '': 
             return None
 
-        print(reqline)
         method, url, proto = reqline.split()
 
         # Read headers & body
@@ -384,10 +380,6 @@ class HTTPResponse(HTTPMessage):
             s += HTTPMessage.EOL
             s += "0" + HTTPMessage.EOL + HTTPMessage.EOL
 
-
-        print("***begin serial ****")
-        print(s)
-        print("***end serial ****")
         return s
 
     def __str__(self):
