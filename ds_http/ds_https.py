@@ -4,7 +4,7 @@
   
   Copyright (C) 2018
       Julian Gruendner   <juliangruendner@googlemail.com>
-      license: GNU, see LICENSE for more details.
+      License: GNU, see LICENSE for more details.
   
 """
 
