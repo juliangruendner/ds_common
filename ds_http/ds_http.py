@@ -2,6 +2,16 @@
   Copyright notice
   ================
   
+  Copyright (C) 2018
+      Julian Gruendner   <juliangruendner@googlemail.com>
+      license: GNU, see LICENSE for more details.
+  
+"""
+
+"""
+  Copyright notice
+  ================
+  
   Copyright (C) 2011
       Roberto Paleari     <roberto.paleari@gmail.com>
       Alessandro Reina    <alessandro.reina@gmail.com>

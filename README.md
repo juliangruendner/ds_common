@@ -1,5 +1,5 @@
 # DS common library
-A library with common functionality for poll-queu mechanism.
+A library with common functionality for poll-queue mechanism.
 This library includes different packages which contains mechanisms 
 
 ## Prerequisites
